@@ -1,51 +1,51 @@
-Dim objExcel, objWorkbook, objSheet, objFSO, objFolder, objFile
-Dim row, folderName, baseDirectory, fileContent
+Dim objExcel, objWorkbook, objSheet, objFSO, objFolder
+Dim excelFilePath, targetDirectory, lastRow, folderName, folderPath
+Const xlUp = -4162
 
-' Set the path of your Excel file
-excelFilePath = "C:\path\to\your\excel.xlsx" ' Change this
-baseDirectory = "C:\path\to\destination" ' Change this
+' Define the Excel file path (update as per your file location)
+excelFilePath = "C:\Path\To\Your\File.xlsx"
 
-' File content for index.test.tsx
-fileContent = "import React from 'react';" & vbCrLf & vbCrLf & _
-              "test('Sample test case', () => {" & vbCrLf & _
-              "  expect(true).toBe(true);" & vbCrLf & _
-              "});"
+' Define the directory where folders should be deleted
+targetDirectory = "C:\Path\To\Target\Directory"
+
+' Create Excel application object
+Set objExcel = CreateObject("Excel.Application")
+objExcel.Visible = False ' Keep Excel hidden
+
+' Open the workbook
+Set objWorkbook = objExcel.Workbooks.Open(excelFilePath)
+Set objSheet = objWorkbook.Sheets(1) ' Read from the first sheet
+
+' Find the last row with data in column 1 (A)
+lastRow = objSheet.Cells(objSheet.Rows.Count, 1).End(xlUp).Row
 
 ' Create File System Object
 Set objFSO = CreateObject("Scripting.FileSystemObject")
 
-' Create Excel Application
-Set objExcel = CreateObject("Excel.Application")
-objExcel.Visible = False ' Keep Excel hidden
-Set objWorkbook = objExcel.Workbooks.Open(excelFilePath)
-Set objSheet = objWorkbook.Sheets(1) ' First sheet
-
-row = 2 ' Assuming first row has headers, start from row 2
-
-' Loop through rows in column A (first column)
-Do While objSheet.Cells(row, 1).Value <> ""
-    folderName = Trim(objSheet.Cells(row, 1).Value)
+' Loop through each row in column A
+For i = 1 To lastRow
+    folderName = Trim(objSheet.Cells(i, 1).Value)
+    
+    ' Skip empty values
     If folderName <> "" Then
-        folderPath = baseDirectory & "\" & folderName
-        ' Create folder if it doesn't exist
-        If Not objFSO.FolderExists(folderPath) Then
-            objFSO.CreateFolder folderPath
+        folderPath = targetDirectory & "\" & folderName
+        
+        ' Check if the folder exists and delete it
+        If objFSO.FolderExists(folderPath) Then
+            objFSO.DeleteFolder folderPath, True
+            WScript.Echo "Deleted: " & folderPath
+        Else
+            WScript.Echo "Folder not found: " & folderPath
         End If
-        ' Create index.test.tsx file inside the folder
-        Set objFile = objFSO.CreateTextFile(folderPath & "\index.test.tsx", True)
-        objFile.Write fileContent
-        objFile.Close
     End If
-    row = row + 1
-Loop
+Next
 
 ' Cleanup
 objWorkbook.Close False
 objExcel.Quit
-
 Set objSheet = Nothing
 Set objWorkbook = Nothing
 Set objExcel = Nothing
 Set objFSO = Nothing
 
-MsgBox "Folders and test files created successfully!", vbInformation, "Done"
+WScript.Echo "Process completed."
